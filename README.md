@@ -5,68 +5,20 @@
 
 > **Predicting Cross-Cultural Adaptation Outcomes Using Machine Learning: A Comparative Study of Hong Kong (N = 75) and France (N = 249)**
 
-This repository contains all analysis code, results, figures, and report materials for a cross-cultural psychology study that applies gradient boosting (V7 model) and linear regression to predict cross-cultural adaptation scores, with SHAP-based interpretability and interaction effect analysis.
+This repository contains the core training code for the V7 ensemble model used in a cross-cultural psychology study. The V7 model applies stacked gradient boosting (6 base learners + linear meta-learner) with 5-fold cross-validation to predict cross-cultural adaptation scores.
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-├── CFA/                          # Confirmatory Factor Analysis scripts & data
-│   ├── comprehensive_analysis.py
-│   ├── advanced_analysis.py
-│   ├── HKN=75.xlsx               # Hong Kong raw data (N=75)
-│   └── Franchn=249.xlsx          # France raw data (N=249)
-│
-├── final_report/                 # Main paper sections (Markdown, APA 7th)
-│   ├── Part1_研究概述与方法论.md
-│   ├── Part2_条目分析与信度效度.md
-│   ├── Part3_V7模型性能与特征分析.md
-│   ├── Part4_交互效应与非线性关系.md
-│   └── Part5_综合讨论与结论.md
-│
-├── appendices/                   # Supplementary tables (APA 7th format)
-│   ├── Appendix_B_Second_Order_Interactions.md   # All 55 two-way interactions
-│   ├── Appendix_C_Three_Way_Interactions.md      # All 165/57 three-way interactions
-│   ├── Appendix_D_Simulated_Data_Validation.md   # Simulation quality checks
-│   ├── Appendix_E_SHAP_Interaction_Matrices.md   # 11×11 SHAP interaction matrices
-│   └── gen_appendices.py                         # Script to regenerate appendices
-│
-├── academic_figures/             # Publication-quality figures (PNG/SVG/PDF)
-│   ├── Figure_4.3_Model_Performance_Comparison.*
-│   ├── Figure_4.4_HK_Feature_Importance.*
-│   ├── Figure_4.5_France_Feature_Importance.*
-│   └── ...                       # Figures 4.3 – 4.20
-│
-├── france_data/                  # France sample processed data & statistics
-│   ├── france_data_filtered_48months.xlsx
-│   ├── descriptive_statistics.csv
-│   ├── reliability_results.csv
-│   └── ...
-│
-├── france_models/                # France model outputs & SHAP values
-│   ├── shap_values_france.npy
-│   ├── feature_importance.csv
-│   └── ...
-│
-├── results/                      # Hong Kong model outputs & interaction results
-│   ├── cv_results_75samples.csv
-│   ├── feature_importance_75samples_cv.csv
-│   ├── two_way_interactions.csv
-│   ├── three_way_interactions.csv
-│   ├── shap_values_75samples_cv.npy
-│   └── comprehensive_analysis/   # France interaction analysis results
-│
-├── linear_regression_results/    # Linear regression tables & diagnostics
-├── analysis_scripts/             # R scripts for psychometric analysis
-├── archive/                      # Deprecated scripts (kept for reference)
-│
-├── train_v7_complete_with_cv.py          # Train HK V7 model (5-fold CV)
-├── train_france_v7_complete_with_cv.py   # Train France V7 model (5-fold CV)
-├── linear_regression_analysis.py         # Linear regression (HK & France)
-├── analyze_interactions.py               # Interaction effect analysis
-├── generate_academic_figures.py          # Generate all publication figures
-└── requirements.txt                      # Python dependencies
+├── train_v7_complete_with_cv.py          # Train HK V7 ensemble model (5-fold CV)
+├── train_france_v7_complete_with_cv.py   # Train France V7 ensemble model (5-fold CV)
+├── archive/
+│   └── generate_interaction_preserved_dataset.py  # Synthetic data generation (Copula + Interaction Regression)
+├── requirements.txt                      # Python dependencies
+├── LICENSE
+└── README.md
 ```
 
 ---
@@ -79,7 +31,19 @@ This repository contains all analysis code, results, figures, and report materia
 | **Outcome** | Cross-cultural adaptation score | Cross-cultural adaptation score |
 | **Predictors** | 11 psychological/social variables | 11 psychological/social variables |
 | **Best model R²** | .847 (5-fold CV mean) | .831 (5-fold CV mean) |
-| **Algorithm** | Gradient Boosting (CatBoost/XGBoost ensemble) | Same |
+| **Algorithm** | V7 stacked ensemble (6 base learners + LinearRegression meta-learner) | Same |
+
+### V7 Model Architecture
+
+The V7 ensemble uses **stacking** with the following base learners:
+- DeepFM (neural network with factorization machines)
+- XGBoost
+- LightGBM
+- CatBoost
+- Gradient Boosting (sklearn)
+- Random Forest
+
+A **LinearRegression** meta-learner combines the out-of-fold predictions from all 6 base learners. Feature importance is computed as a SHAP-weighted average across the tree-based models.
 
 ### Key Variables (11 predictors)
 
@@ -91,7 +55,7 @@ This repository contains all analysis code, results, figures, and report materia
 | FS | Family Support | 家庭支持 |
 | Op | Openness | 开放性 |
 | CM | Cultural Maintenance | 文化保持 |
-| MHK | Months in HK/France | 来港时长 |
+| MHK | Months in HK/France | 来港/法时长 |
 | CF | Communication Frequency | 家庭沟通频率 |
 | CH | Communication Honesty | 沟通坦诚度 |
 | Au | Autonomy | 自主权 |
@@ -113,7 +77,22 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Train models
+### 2. Prepare data
+
+The training scripts expect real survey data files (not included in this repository due to participant privacy):
+
+- **HK model** (`train_v7_complete_with_cv.py`): requires `CFA/HKN=75.xlsx`
+- **France model** (`train_france_v7_complete_with_cv.py`): requires `CFA/Franchn=249.xlsx`
+
+To generate synthetic training data (100k samples) from the real data using a Gaussian Copula + Interaction Regression approach:
+
+```bash
+python archive/generate_interaction_preserved_dataset.py
+```
+
+This saves the synthetic dataset to `data/processed/interaction_preserved_100k.csv`.
+
+### 3. Train models
 
 ```bash
 # Hong Kong sample (N=75), 5-fold cross-validation
@@ -123,23 +102,7 @@ python train_v7_complete_with_cv.py
 python train_france_v7_complete_with_cv.py
 ```
 
-### 3. Run interaction analysis
-
-```bash
-python analyze_interactions.py
-```
-
-### 4. Generate figures
-
-```bash
-python generate_academic_figures.py
-```
-
-### 5. Regenerate appendices
-
-```bash
-python appendices/gen_appendices.py
-```
+Results are saved to `results/` (HK) and `france_models/` (France).
 
 ---
 
@@ -164,21 +127,8 @@ python appendices/gen_appendices.py
 ## 📂 Data Availability
 
 - **Raw data** (`CFA/HKN=75.xlsx`, `CFA/Franchn=249.xlsx`): **Not included** in the repository to protect participant privacy.
-- **Simulated data** (`france_data/france_100k_48months.csv`, `data/processed/*.csv`): **Not included** in the repository due to file size (7–20 MB). Regenerate using `train_france_v7_complete_with_cv.py`.
-- **Trained model files** (`*.pkl`): **Not included** due to file size (up to 3.2 GB). Retrain using the provided scripts.
-
----
-
-## 📋 Appendices
-
-All supplementary tables are in the `appendices/` folder in APA 7th edition Markdown format:
-
-| File | Contents |
-|------|----------|
-| `Appendix_B_Second_Order_Interactions.md` | All 55 two-way interaction terms (HK & France) |
-| `Appendix_C_Three_Way_Interactions.md` | All three-way interaction terms (HK: 165, France: 57) |
-| `Appendix_D_Simulated_Data_Validation.md` | Simulation quality: correlation, KS tests, R² |
-| `Appendix_E_SHAP_Interaction_Matrices.md` | 11×11 SHAP interaction strength & permutation *p*-values |
+- **Simulated data** (`data/processed/interaction_preserved_100k.csv`): **Not included** due to file size. Regenerate using `archive/generate_interaction_preserved_dataset.py`.
+- **Trained model files** (`*.pkl`): **Not included** due to file size. Retrain using the provided scripts.
 
 ---
 
@@ -189,6 +139,7 @@ See `requirements.txt`. Key packages:
 ```
 catboost>=1.2
 xgboost>=2.0
+lightgbm>=4.0
 scikit-learn>=1.3
 shap>=0.44
 numpy>=1.24
@@ -211,14 +162,14 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 
 ## 📧 Citation
 
-If you use this code or data in your research, please cite:
+If you use this code in your research, please cite:
 
 ```bibtex
 @misc{crosscultural2025,
-  title   = {Cross-Cultural Adaptation Study: Hong Kong \& France},
+  title   = {Cross-Cultural Adaptation Study: Hong Kong \& France — V7 Ensemble Model},
   year    = {2025},
   url     = {https://github.com/Misaka1082/V7-ensemble-cross-cultural-adaptation},
-  note    = {Analysis code and supplementary materials}
+  note    = {V7 stacked ensemble training code for cross-cultural adaptation prediction}
 }
 ```
 
