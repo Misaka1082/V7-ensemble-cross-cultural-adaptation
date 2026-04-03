@@ -36,8 +36,11 @@ start_time = time.time()
 print("\n【步骤1/12】加载训练数据")
 print(f"开始时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-df_train = pd.read_csv('F:/Project/4.1.9.final/data/processed/interaction_preserved_100k_48months.csv')
-df_real = pd.read_excel('F:/Project/4.1.9.final/data/processed/real_data_filtered_48months.xlsx')
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+df_train = pd.read_csv(os.path.join(BASE_DIR, 'data', 'processed', 'interaction_preserved_100k_48months.csv'))
+df_real = pd.read_excel(os.path.join(BASE_DIR, 'data', 'processed', 'real_data_filtered_48months.xlsx'))
 
 # 列名映射
 column_mapping = {
@@ -327,7 +330,8 @@ for model_name in cv_results.keys():
     print(f"  {model_name:12s}: {mean_r2:.4f} ± {std_r2:.4f}")
 
 # 保存交叉验证结果
-cv_summary.to_csv('F:/Project/4.1.9.final/results/cv_results_75samples.csv', index=False)
+os.makedirs(os.path.join(BASE_DIR, 'results'), exist_ok=True)
+cv_summary.to_csv(os.path.join(BASE_DIR, 'results', 'cv_results_75samples.csv'), index=False)
 
 # ============================================================================
 # 第9步：在全部数据上训练最终模型
@@ -339,10 +343,101 @@ X_full_scaled = scaler_final.fit_transform(X_full)
 X_test_scaled_final = scaler_final.transform(X_test)
 
 # 训练最终的6个模型（使用全部10万数据）
-print("  训练最终模型...")
+print("  训练最终DeepFM...")
+deepfm_final = DeepFM(len(feature_cols)).to(device)
+criterion_f = nn.MSELoss()
+optimizer_f = optim.Adam(deepfm_final.parameters(), lr=0.001)
+train_ds_f = TensorDataset(torch.FloatTensor(X_full_scaled), torch.FloatTensor(y_full).unsqueeze(1))
+train_ld_f = DataLoader(train_ds_f, batch_size=256, shuffle=True)
+for epoch in range(50):
+    deepfm_final.train()
+    for bx, by in train_ld_f:
+        bx, by = bx.to(device), by.to(device)
+        optimizer_f.zero_grad()
+        loss = criterion_f(deepfm_final(bx), by)
+        loss.backward()
+        optimizer_f.step()
+deepfm_final.eval()
 
-# 这里省略详细训练过程（与之前相同）
-# ...
+print("  训练最终XGBoost...")
+xgb_final = xgb.XGBRegressor(
+    n_estimators=500, learning_rate=0.05, max_depth=6,
+    subsample=0.8, colsample_bytree=0.8, reg_lambda=1.0,
+    random_state=42, n_jobs=-1)
+xgb_final.fit(X_full_scaled, y_full, verbose=False)
+
+print("  训练最终LightGBM...")
+lgb_final = lgb.LGBMRegressor(
+    n_estimators=300, learning_rate=0.1, num_leaves=31,
+    feature_fraction=0.7, bagging_fraction=0.8,
+    random_state=42, n_jobs=-1, verbose=-1)
+lgb_final.fit(X_full_scaled, y_full)
+
+print("  训练最终CatBoost...")
+cb_final = cb.CatBoostRegressor(
+    iterations=500, learning_rate=0.03, depth=6,
+    l2_leaf_reg=3.0, random_state=42, verbose=False)
+cb_final.fit(X_full_scaled, y_full)
+
+print("  训练最终GBM...")
+gbm_final = GradientBoostingRegressor(
+    n_estimators=300, learning_rate=0.1, max_depth=5,
+    subsample=0.8, random_state=42)
+gbm_final.fit(X_full_scaled, y_full)
+
+print("  训练最终RandomForest...")
+rf_final = RandomForestRegressor(
+    n_estimators=500, max_depth=15, min_samples_split=5,
+    max_features='sqrt', random_state=42, n_jobs=-1)
+rf_final.fit(X_full_scaled, y_full)
+
+# 用5折CV的验证集预测训练meta-learner
+print("  训练最终Meta-Learner（Stacking）...")
+meta_train_final = np.column_stack([
+    np.concatenate([fold_models[i]['deepfm'](
+        torch.FloatTensor(fold_models[i]['scaler'].transform(X_full[val_idx])).to(device)
+    ).cpu().detach().numpy().flatten()
+        for i, (_, val_idx) in enumerate(kfold.split(X_full))]),
+]) if False else None  # placeholder; use fold OOF predictions below
+
+# Collect out-of-fold predictions for meta-learner training
+oof_deepfm = np.zeros(len(X_full))
+oof_xgb    = np.zeros(len(X_full))
+oof_lgb    = np.zeros(len(X_full))
+oof_cb     = np.zeros(len(X_full))
+oof_gbm    = np.zeros(len(X_full))
+oof_rf     = np.zeros(len(X_full))
+
+for i, (_, val_idx) in enumerate(kfold.split(X_full)):
+    fm = fold_models[i]
+    Xv = fm['scaler'].transform(X_full[val_idx])
+    with torch.no_grad():
+        oof_deepfm[val_idx] = fm['deepfm'](torch.FloatTensor(Xv).to(device)).cpu().numpy().flatten()
+    oof_xgb[val_idx] = fm['xgb'].predict(Xv)
+    oof_lgb[val_idx] = fm['lgb'].predict(Xv)
+    oof_cb[val_idx]  = fm['cb'].predict(Xv)
+    oof_gbm[val_idx] = fm['gbm'].predict(Xv)
+    oof_rf[val_idx]  = fm['rf'].predict(Xv)
+
+meta_oof = np.column_stack([oof_deepfm, oof_xgb, oof_lgb, oof_cb, oof_gbm, oof_rf])
+meta_final = LinearRegression()
+meta_final.fit(meta_oof, y_full)
+print(f"  Meta-Learner系数: {meta_final.coef_}")
+
+# 保存最终模型
+import joblib
+final_model_bundle = {
+    'scaler': scaler_final,
+    'deepfm': deepfm_final,
+    'xgb': xgb_final,
+    'lgb': lgb_final,
+    'cb': cb_final,
+    'gbm': gbm_final,
+    'rf': rf_final,
+    'meta': meta_final
+}
+joblib.dump(final_model_bundle, os.path.join(BASE_DIR, 'results', 'v7_final_model_hk.pkl'))
+print("✓ 最终模型已保存")
 
 # ============================================================================
 # 第10步：SHAP分析
@@ -385,8 +480,8 @@ print("\n特征重要性排名:")
 print(importance_df.to_string(index=False))
 
 # 保存
-np.save('F:/Project/4.1.9.final/results/shap_values_75samples_cv.npy', shap_values_ensemble)
-importance_df.to_csv('F:/Project/4.1.9.final/results/feature_importance_75samples_cv.csv', index=False)
+np.save(os.path.join(BASE_DIR, 'results', 'shap_values_75samples_cv.npy'), shap_values_ensemble)
+importance_df.to_csv(os.path.join(BASE_DIR, 'results', 'feature_importance_75samples_cv.csv'), index=False)
 
 # ============================================================================
 # 第11步：在测试集上评估
@@ -466,12 +561,11 @@ V7模型训练完成报告（包含5折交叉验证）
 print(report)
 
 # 保存报告
-with open('F:/Project/4.1.9.final/results/training_report_with_cv.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(BASE_DIR, 'results', 'training_report_with_cv.txt'), 'w', encoding='utf-8') as f:
     f.write(report)
 
-# 保存模型
-import joblib
-joblib.dump(fold_models, 'F:/Project/4.1.9.final/results/v7_models_75samples_5fold.pkl')
+# 保存5折模型
+joblib.dump(fold_models, os.path.join(BASE_DIR, 'results', 'v7_models_75samples_5fold.pkl'))
 
-print("\n✓ 所有文件已保存到 F:/Project/4.1.9.final/results/")
+print("\n✓ 所有文件已保存到 results/")
 print("=" * 80)

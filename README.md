@@ -163,7 +163,7 @@ python appendices/gen_appendices.py
 
 ## 📂 Data Availability
 
-- **Raw data** (`CFA/HKN=75.xlsx`, `CFA/Franchn=249.xlsx`): Included. Contains anonymized survey responses.
+- **Raw data** (`CFA/HKN=75.xlsx`, `CFA/Franchn=249.xlsx`): **Not included** in the repository to protect participant privacy.
 - **Simulated data** (`france_data/france_100k_48months.csv`, `data/processed/*.csv`): **Not included** in the repository due to file size (7–20 MB). Regenerate using `train_france_v7_complete_with_cv.py`.
 - **Trained model files** (`*.pkl`): **Not included** due to file size (up to 3.2 GB). Retrain using the provided scripts.
 
@@ -217,7 +217,7 @@ If you use this code or data in your research, please cite:
 @misc{crosscultural2025,
   title   = {Cross-Cultural Adaptation Study: Hong Kong \& France},
   year    = {2025},
-  url     = {https://github.com/YOUR_USERNAME/YOUR_REPO},
+  url     = {https://github.com/Misaka1082/V7-ensemble-cross-cultural-adaptation},
   note    = {Analysis code and supplementary materials}
 }
 ```

@@ -15,28 +15,50 @@ env/
 ENV/
 
 # =============================================================
-# Large binary / generated files
+# Large binary / generated model files
 # =============================================================
-
-# Trained model files (can be several GB)
 *.pkl
 *.joblib
-
-# NumPy binary arrays (large SHAP value files)
-# Uncomment the line below if you want to exclude them too
-# *.npy
+*.pth
 
 # =============================================================
-# Large generated data files (re-creatable by scripts)
+# Raw & generated data files (not for public release)
 # =============================================================
+# Raw survey data (ethics / privacy)
+CFA/HKN=75.xlsx
+CFA/Franchn=249.xlsx
+CFA/FranchN=249.csv
+
+# Processed / simulated large data
+data/
 france_data/france_100k_48months.csv
-data/processed/interaction_preserved_100k.csv
-data/processed/improved_100k.csv
+france_data/france_data_filtered_48months.xlsx
 
 # =============================================================
-# Large figure formats (keep PNG/SVG/PDF, exclude EPS)
+# Figures / images (already in paper)
 # =============================================================
+academic_figures/
+linear_regression_results/*.png
+results/*.png
+results/openness_analysis/*.png
+results/interpretability/*.png
+france_models/*.png
+
+# EPS vector files (very large)
 *.eps
+
+# =============================================================
+# Result outputs (regeneratable)
+# =============================================================
+results/enhanced_individual_reports/
+results/individual_reports/
+results/individual_reports_enhanced/
+results/final_robust/
+results/comprehensive_analysis/
+results/optimized_v3/
+results/v7_ultimate/
+results/overfitting_check_v7/
+results/overfitting_validation/
 
 # =============================================================
 # IDE / OS

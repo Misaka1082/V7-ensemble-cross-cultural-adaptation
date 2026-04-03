@@ -38,10 +38,13 @@ start_time = time.time()
 print("\n【步骤1/12】加载训练数据")
 print(f"开始时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # 加载法国生成数据
-df_train = pd.read_csv('F:/Project/4_1_9_final/france_data/france_100k_48months.csv')
+df_train = pd.read_csv(os.path.join(BASE_DIR, 'france_data', 'france_100k_48months.csv'))
 # 加载法国真实数据
-df_real = pd.read_excel('F:/Project/4_1_9_final/france_data/france_data_filtered_48months.xlsx')
+df_real = pd.read_excel(os.path.join(BASE_DIR, 'france_data', 'france_data_filtered_48months.xlsx'))
 
 # 列名映射
 column_mapping = {
@@ -342,7 +345,8 @@ for model_name in cv_results.keys():
     print(f"  {model_name:12s}: {mean_r2:.4f} ± {std_r2:.4f}")
 
 # 保存交叉验证结果
-cv_summary.to_csv('F:/Project/4_1_9_final/france_models/cv_results_france.csv', index=False)
+os.makedirs(os.path.join(BASE_DIR, 'france_models'), exist_ok=True)
+cv_summary.to_csv(os.path.join(BASE_DIR, 'france_models', 'cv_results_france.csv'), index=False)
 print("\n✓ 交叉验证结果已保存")
 
 # ============================================================================
@@ -391,8 +395,8 @@ print("\n特征重要性排名（基于SHAP值）:")
 print(importance_df.to_string(index=False))
 
 # 保存SHAP值和特征重要性
-np.save('F:/Project/4_1_9_final/france_models/shap_values_france.npy', shap_values_ensemble)
-importance_df.to_csv('F:/Project/4_1_9_final/france_models/feature_importance_shap.csv', index=False)
+np.save(os.path.join(BASE_DIR, 'france_models', 'shap_values_france.npy'), shap_values_ensemble)
+importance_df.to_csv(os.path.join(BASE_DIR, 'france_models', 'feature_importance_shap.csv'), index=False)
 
 # 生成SHAP可视化
 print("\n生成SHAP可视化图表...")
@@ -402,7 +406,7 @@ plt.figure(figsize=(10, 8))
 shap.summary_plot(shap_values_ensemble, X_test_scaled_shap, feature_names=feature_cols, show=False)
 plt.title('法国样本SHAP Summary Plot', fontsize=14, fontproperties='SimHei')
 plt.tight_layout()
-plt.savefig('F:/Project/4_1_9_final/france_models/shap_summary_plot.png', dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(BASE_DIR, 'france_models', 'shap_summary_plot.png'), dpi=300, bbox_inches='tight')
 plt.close()
 
 # SHAP Bar Plot
@@ -411,7 +415,7 @@ shap.summary_plot(shap_values_ensemble, X_test_scaled_shap, feature_names=featur
                   plot_type='bar', show=False)
 plt.title('法国样本特征重要性（SHAP）', fontsize=14, fontproperties='SimHei')
 plt.tight_layout()
-plt.savefig('F:/Project/4_1_9_final/france_models/shap_bar_plot.png', dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(BASE_DIR, 'france_models', 'shap_bar_plot.png'), dpi=300, bbox_inches='tight')
 plt.close()
 
 print("✓ SHAP可视化已保存")
@@ -458,7 +462,7 @@ predictions_df = pd.DataFrame({
     '预测值': final_test_pred,
     '残差': y_test - final_test_pred
 })
-predictions_df.to_csv('F:/Project/4_1_9_final/france_models/predictions_france_cv.csv', index=False)
+predictions_df.to_csv(os.path.join(BASE_DIR, 'france_models', 'predictions_france_cv.csv'), index=False)
 
 # ============================================================================
 # 第14步：生成最终报告
@@ -528,13 +532,13 @@ report = f"""
 print(report)
 
 # 保存报告
-with open('F:/Project/4_1_9_final/france_models/france_v7_final_report_complete.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(BASE_DIR, 'france_models', 'france_v7_final_report_complete.txt'), 'w', encoding='utf-8') as f:
     f.write(report)
 
 # 保存模型
-joblib.dump(fold_models, 'F:/Project/4_1_9_final/france_models/france_v7_models_5fold.pkl')
+joblib.dump(fold_models, os.path.join(BASE_DIR, 'france_models', 'france_v7_models_5fold.pkl'))
 
-print("\n✓ 所有文件已保存到 F:/Project/4_1_9_final/france_models/")
+print(f"\n✓ 所有文件已保存到 {os.path.join(BASE_DIR, 'france_models')}/")
 print("=" * 80)
 print("训练完成！法国样本现已具备完整的V7模型流程。")
 print("=" * 80)
