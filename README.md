@@ -167,9 +167,9 @@ This project is licensed under the **MIT License** — see [LICENSE](LICENSE) fo
 If you use this code in your research, please cite:
 
 ```bibtex
-@misc{crosscultural2025,
+@misc{crosscultural2026,
   title   = {Cross-Cultural Adaptation Study: Hong Kong \& France — V7 Ensemble Model},
-  year    = {2025},
+  year    = {2026},
   url     = {https://github.com/Misaka1082/V7-ensemble-cross-cultural-adaptation},
   note    = {V7 stacked ensemble training code for cross-cultural adaptation prediction}
 }
