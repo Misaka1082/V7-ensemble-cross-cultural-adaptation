@@ -1,0 +1,63 @@
+# =============================================================
+# Python
+# =============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# =============================================================
+# Large binary / generated files
+# =============================================================
+
+# Trained model files (can be several GB)
+*.pkl
+*.joblib
+
+# NumPy binary arrays (large SHAP value files)
+# Uncomment the line below if you want to exclude them too
+# *.npy
+
+# =============================================================
+# Large generated data files (re-creatable by scripts)
+# =============================================================
+france_data/france_100k_48months.csv
+data/processed/interaction_preserved_100k.csv
+data/processed/improved_100k.csv
+
+# =============================================================
+# Large figure formats (keep PNG/SVG/PDF, exclude EPS)
+# =============================================================
+*.eps
+
+# =============================================================
+# IDE / OS
+# =============================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# =============================================================
+# Jupyter
+# =============================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# =============================================================
+# Build / dist
+# =============================================================
+dist/
+build/
+*.egg-info/

@@ -1,0 +1,71 @@
+{
+  "method": "ensemble_gradient",
+  "features": [
+    {
+      "rank": 1,
+      "feature_name": "cultural_contact",
+      "chinese_name": "文化接触（1-7分）",
+      "importance": 0.8923570513725281
+    },
+    {
+      "rank": 2,
+      "feature_name": "social_connection",
+      "chinese_name": "社会联结感（5-30分）",
+      "importance": 0.7990758419036865
+    },
+    {
+      "rank": 3,
+      "feature_name": "social_contact",
+      "chinese_name": "社会接触（1-7分）",
+      "importance": 0.6601845026016235
+    },
+    {
+      "rank": 4,
+      "feature_name": "family_support",
+      "chinese_name": "家庭支持（8-40分）",
+      "importance": 0.5593796968460083
+    },
+    {
+      "rank": 5,
+      "feature_name": "openness",
+      "chinese_name": "开放性（1-7分）",
+      "importance": 0.3746582269668579
+    },
+    {
+      "rank": 6,
+      "feature_name": "months_in_hk",
+      "chinese_name": "来港时长（月）",
+      "importance": 0.3067190647125244
+    },
+    {
+      "rank": 7,
+      "feature_name": "cultural_maintenance",
+      "chinese_name": "文化保持（1-7分）",
+      "importance": 0.16827461123466492
+    },
+    {
+      "rank": 8,
+      "feature_name": "personal_autonomy",
+      "chinese_name": "自主权（1-5分）",
+      "importance": 0.13740655779838562
+    },
+    {
+      "rank": 9,
+      "feature_name": "comm_frequency_feeling",
+      "chinese_name": "家庭沟通频率（1-5分）",
+      "importance": 0.1231791228055954
+    },
+    {
+      "rank": 10,
+      "feature_name": "social_maintenance",
+      "chinese_name": "社会保持（1-7分）",
+      "importance": 0.11089546978473663
+    },
+    {
+      "rank": 11,
+      "feature_name": "comm_openness",
+      "chinese_name": "沟通坦诚度（1-5分）",
+      "importance": 0.11012880504131317
+    }
+  ]
+}
