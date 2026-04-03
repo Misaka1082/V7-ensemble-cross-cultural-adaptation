@@ -30,7 +30,8 @@ This repository contains the core training code for the V7 ensemble model used i
 | **N** | 75 | 249 |
 | **Outcome** | Cross-cultural adaptation score | Cross-cultural adaptation score |
 | **Predictors** | 11 psychological/social variables | 11 psychological/social variables |
-| **Best model R²** | .847 (5-fold CV mean) | .831 (5-fold CV mean) |
+| **CV R² (5-fold mean ± SD)** | .727 ± .001 | .742 ± .004 |
+| **Test set R²** | .753 | .785 |
 | **Algorithm** | V7 stacked ensemble (6 base learners + LinearRegression meta-learner) | Same |
 
 ### V7 Model Architecture
@@ -108,13 +109,14 @@ Results are saved to `results/` (HK) and `france_models/` (France).
 
 ## 📊 Main Results
 
-### Model Performance (V7, 5-Fold Cross-Validation)
+### Model Performance (V7, 5-Fold Cross-Validation on Synthetic Data + Evaluation on Real Data)
 
 | Metric | Hong Kong | France |
 |--------|-----------|--------|
-| R² (mean ± SD) | .847 ± .031 | .831 ± .018 |
-| RMSE | 0.312 | 0.287 |
-| MAE | 0.241 | 0.219 |
+| CV R² (mean ± SD) | .727 ± .001 | .742 ± .004 |
+| Test R² (real data) | .753 | .785 |
+| Test RMSE | 1.998 | 2.076 |
+| Test MAE | 1.537 | 1.644 |
 
 ### Top Interaction Effects
 
