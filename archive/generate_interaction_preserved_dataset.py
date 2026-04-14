@@ -1,17 +1,40 @@
 #!/usr/bin/env python3
 """
-保留交互效应结构的10万样本数据生成器
-===========================================
-核心思路：
-1. 从真实103样本拟合包含显著交互项的回归模型（捕获交互效应结构）
-2. 使用Gaussian Copula生成基础特征（保留边际分布和相关结构）
-3. 基于回归模型重新生成目标变量（保留交互效应）
-4. 添加校准噪声使残差分布匹配真实数据
-5. 验证生成数据的交互效应保留度
+Interaction-Preserving 100k Sample Data Generator
 
-解决的核心问题：
-- 原copula方法只保留了Spearman相关，丢失了高阶交互效应
-- 新方法通过回归模型显式编码34个显著交互效应到生成过程中
+Overview
+--------
+Generates 100,000 synthetic training samples that faithfully preserve the
+interaction-effect structure found in the real HK dataset.
+
+Pipeline
+--------
+1. Fit an Interaction Regression Model (ElasticNetCV) on the real data,
+   capturing 2-way, 3-way, 4-way interactions and quadratic terms.
+2. Use a Gaussian Copula to generate synthetic features that preserve
+   marginal distributions and Spearman rank correlations.
+3. Re-generate the target variable via the regression model + calibrated
+   residual noise, so all interaction effects are encoded in the output.
+4. Validate that the generated data reproduces the key interaction effects.
+
+Prerequisites
+-------------
+Real HK data file:
+    data/processed/real_data_filtered_48months.xlsx  (N~75, months 1-48)
+NOTE: The original script used real_data_103.xlsx (N=103, unfiltered).
+Update the real_path variable in main() if your file has a different name.
+
+Output
+------
+data/processed/interaction_preserved_100k_48months.csv
+    <- used by train_v7_complete_with_cv.py
+data/processed/interaction_preserved_100k_48months_cn.csv
+data/processed/interaction_preserved_generation_report.json
+
+Dependencies
+------------
+statsmodels  (pip install statsmodels)
+scikit-learn, numpy, pandas, scipy
 """
 
 import numpy as np
@@ -727,10 +750,16 @@ def main():
     print(f"目标: 生成保留34个显著交互效应的10万样本数据集")
     print(f"方法: Copula特征生成 + 交互回归模型目标生成 + 残差校准")
     
-    # 加载真实数据
-    real_path = Path(__file__).parent / "data" / "processed" / "real_data_103.xlsx"
+    # ── Load real data ──────────────────────────────────────────────────────
+    # Update this path if your source file has a different name.
+    real_path = Path(__file__).parent.parent / "data" / "processed" / "real_data_filtered_48months.xlsx"
+    if not real_path.exists():
+        raise FileNotFoundError(
+            f"\nReal data file not found: {real_path}\n"
+            "Please place the HK real data xlsx at that path, or update `real_path` in main()."
+        )
     df_real = pd.read_excel(real_path)
-    print(f"\n真实数据: {len(df_real)} 样本, {len(df_real.columns)} 列")
+    print(f"\nReal data: {len(df_real)} samples, {len(df_real.columns)} columns")
     
     # ---- 阶段1: 拟合交互回归模型 ----
     reg_model = InteractionRegressionModel()
@@ -755,28 +784,32 @@ def main():
     validator = InteractionValidator()
     validation_results = validator.validate(df_gen, df_real)
     
-    # ---- 保存数据 ----
+    # ── Save outputs ────────────────────────────────────────────────────────
     print("\n" + "=" * 80)
-    print("保存数据")
+    print("Saving outputs")
     print("=" * 80)
-    
-    # 转换为英文列名
+
+    # Rename to English column names
     df_gen_en = df_gen.rename(columns=COLUMN_MAPPING)
     df_gen_en['batch_id'] = np.repeat(range(5), n_samples // 5)
     df_gen_en['sample_id'] = range(n_samples)
-    
-    output_path = Path(__file__).parent / "data" / "processed" / "interaction_preserved_100k.csv"
+
+    # Output directory — create if it doesn't exist
+    out_dir = Path(__file__).parent.parent / "data" / "processed"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Primary output — filename matches what train_v7_complete_with_cv.py expects
+    output_path = out_dir / "interaction_preserved_100k_48months.csv"
     df_gen_en.to_csv(output_path, index=False)
-    print(f"  数据已保存: {output_path}")
-    print(f"  形状: {df_gen_en.shape}")
-    
-    # 也保存中文版本
-    output_path_cn = Path(__file__).parent / "data" / "processed" / "interaction_preserved_100k_cn.csv"
+    print(f"  Saved (English): {output_path}  shape={df_gen_en.shape}")
+
+    # Chinese column name version (optional, for reference)
+    output_path_cn = out_dir / "interaction_preserved_100k_48months_cn.csv"
     df_gen['sample_id'] = range(n_samples)
     df_gen.to_csv(output_path_cn, index=False, encoding='utf-8-sig')
-    print(f"  中文版已保存: {output_path_cn}")
-    
-    # 保存验证报告
+    print(f"  Saved (Chinese): {output_path_cn}")
+
+    # Validation / generation report
     report = {
         'method': 'Copula + Interaction Regression + Residual Calibration',
         'n_samples': n_samples,
@@ -789,14 +822,14 @@ def main():
         'correlation_avg_diff': float(validation_results['correlation']['avg_diff']),
         'generation_time_seconds': time.time() - start_time,
     }
-    
-    report_path = Path(__file__).parent / "data" / "processed" / "interaction_preserved_generation_report.json"
+
+    report_path = out_dir / "interaction_preserved_generation_report.json"
     with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    print(f"  报告已保存: {report_path}")
-    
+    print(f"  Report saved  : {report_path}")
+
     elapsed = time.time() - start_time
-    print(f"\n✅ 数据生成完成! 用时: {elapsed:.1f}秒")
+    print(f"\n✅ Data generation complete!  Elapsed: {elapsed:.1f}s")
     print("=" * 80)
 
 
