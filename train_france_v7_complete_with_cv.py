@@ -16,7 +16,7 @@ Usage
 
 Outputs (saved to france_models/)
 ----------------------------------
-  cv_results_france.csv             – per-fold R² for every base learner
+  cv_results_france.csv             – per-fold R2 for every base learner
   shap_values_france.npy            – ensemble SHAP values on real test set
   feature_importance_shap.csv
   france_v7_models_5fold.pkl        – all 5 fold model bundles
@@ -229,7 +229,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
         deepfm_test_pred = deepfm(torch.FloatTensor(X_test_s).to(device)).cpu().numpy().flatten()
 
     cv_results["deepfm"].append(r2_score(y_val, deepfm_val_pred))
-    print(f"    DeepFM       R²: {cv_results['deepfm'][-1]:.4f}")
+    print(f"    DeepFM       R2: {cv_results['deepfm'][-1]:.4f}")
 
     # ── 2. XGBoost ───────────────────────────────────────────
     print(f"  [{fold}/5] Training XGBoost ...")
@@ -242,7 +242,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     xgb_val_pred  = xgb_model.predict(X_val_s)
     xgb_test_pred = xgb_model.predict(X_test_s)
     cv_results["xgb"].append(r2_score(y_val, xgb_val_pred))
-    print(f"    XGBoost      R²: {cv_results['xgb'][-1]:.4f}")
+    print(f"    XGBoost      R2: {cv_results['xgb'][-1]:.4f}")
 
     # ── 3. LightGBM ──────────────────────────────────────────
     print(f"  [{fold}/5] Training LightGBM ...")
@@ -258,7 +258,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     lgb_val_pred  = lgb_model.predict(X_val_s)
     lgb_test_pred = lgb_model.predict(X_test_s)
     cv_results["lgb"].append(r2_score(y_val, lgb_val_pred))
-    print(f"    LightGBM     R²: {cv_results['lgb'][-1]:.4f}")
+    print(f"    LightGBM     R2: {cv_results['lgb'][-1]:.4f}")
 
     # ── 4. CatBoost ──────────────────────────────────────────
     print(f"  [{fold}/5] Training CatBoost ...")
@@ -270,7 +270,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     cb_val_pred  = cb_model.predict(X_val_s)
     cb_test_pred = cb_model.predict(X_test_s)
     cv_results["cb"].append(r2_score(y_val, cb_val_pred))
-    print(f"    CatBoost     R²: {cv_results['cb'][-1]:.4f}")
+    print(f"    CatBoost     R2: {cv_results['cb'][-1]:.4f}")
 
     # ── 5. GBM ───────────────────────────────────────────────
     print(f"  [{fold}/5] Training GBM ...")
@@ -282,7 +282,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     gbm_val_pred  = gbm_model.predict(X_val_s)
     gbm_test_pred = gbm_model.predict(X_test_s)
     cv_results["gbm"].append(r2_score(y_val, gbm_val_pred))
-    print(f"    GBM          R²: {cv_results['gbm'][-1]:.4f}")
+    print(f"    GBM          R2: {cv_results['gbm'][-1]:.4f}")
 
     # ── 6. RandomForest ──────────────────────────────────────
     print(f"  [{fold}/5] Training RandomForest ...")
@@ -294,7 +294,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     rf_val_pred  = rf_model.predict(X_val_s)
     rf_test_pred = rf_model.predict(X_test_s)
     cv_results["rf"].append(r2_score(y_val, rf_val_pred))
-    print(f"    RandomForest R²: {cv_results['rf'][-1]:.4f}")
+    print(f"    RandomForest R2: {cv_results['rf'][-1]:.4f}")
 
     # ── 7. Stacking meta-learner ─────────────────────────────
     print(f"  [{fold}/5] Stacking ...")
@@ -303,7 +303,7 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_full), 1):
     meta_model = LinearRegression()
     meta_model.fit(meta_train, y_val)
     cv_results["v7"].append(r2_score(y_val, meta_model.predict(meta_train)))
-    print(f"    V7 ensemble  R²: {cv_results['v7'][-1]:.4f}")
+    print(f"    V7 ensemble  R2: {cv_results['v7'][-1]:.4f}")
 
     fold_models.append({
         "scaler": scaler, "deepfm": deepfm,
@@ -320,7 +320,7 @@ print("[Step 11/12] Cross-validation summary")
 print("=" * 80)
 
 cv_summary = pd.DataFrame(cv_results)
-print("\nPer-fold R²:")
+print("\nPer-fold R2:")
 print(cv_summary.to_string(index=False))
 print("\nMean ± Std:")
 for name, vals in cv_results.items():
@@ -428,7 +428,7 @@ final_r2   = r2_score(y_test, final_pred)
 final_rmse = np.sqrt(mean_squared_error(y_test, final_pred))
 final_mae  = mean_absolute_error(y_test, final_pred)
 
-print(f"\n  R²   = {final_r2:.4f}")
+print(f"\n  R2   = {final_r2:.4f}")
 print(f"  RMSE = {final_rmse:.4f}")
 print(f"  MAE  = {final_mae:.4f}")
 
@@ -458,7 +458,7 @@ Data:
   Real test samples: {len(df_real)} (France)
   Features         : {len(feature_cols)}
 
-5-Fold Cross-Validation R² (mean ± std):
+5-Fold Cross-Validation R2 (mean ± std):
   DeepFM      : {np.mean(cv_results['deepfm']):.4f} ± {np.std(cv_results['deepfm']):.4f}
   XGBoost     : {np.mean(cv_results['xgb']):.4f} ± {np.std(cv_results['xgb']):.4f}
   LightGBM    : {np.mean(cv_results['lgb']):.4f} ± {np.std(cv_results['lgb']):.4f}
@@ -468,7 +468,7 @@ Data:
   V7 Ensemble : {np.mean(cv_results['v7']):.4f} ± {np.std(cv_results['v7']):.4f}
 
 Final Test-Set Performance (5-fold average, N={len(df_real)} real France samples):
-  R²   = {final_r2:.4f}
+  R2   = {final_r2:.4f}
   RMSE = {final_rmse:.4f}
   MAE  = {final_mae:.4f}
 
