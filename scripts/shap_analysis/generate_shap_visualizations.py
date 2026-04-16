@@ -50,15 +50,18 @@ def plot_waterfall(shap_values, explainer, X, sample_idx=0,
                    output_path=None, show=False):
     """Waterfall plot for a single prediction."""
     plt.figure(figsize=(10, 6))
-    shap.waterfall_plot(
-        shap.Explanation(
-            values=shap_values[sample_idx],
-            base_values=explainer.expected_value,
-            data=X.iloc[sample_idx],
-            feature_names=list(X.columns)
-        ),
-        show=False
+    explanation = shap.Explanation(
+        values=shap_values[sample_idx],
+        base_values=explainer.expected_value,
+        data=X.iloc[sample_idx].values,
+        feature_names=list(X.columns)
     )
+    # shap.plots.waterfall is the current API (shap >= 0.40);
+    # fall back to legacy shap.waterfall_plot for older versions
+    if hasattr(shap.plots, 'waterfall'):
+        shap.plots.waterfall(explanation, show=False)
+    else:
+        shap.waterfall_plot(explanation, show=False)
     plt.tight_layout()
     if output_path:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)

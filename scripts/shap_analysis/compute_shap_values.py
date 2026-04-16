@@ -48,8 +48,8 @@ def compute_shap_values(model_path, X, model_type='xgboost', background_samples=
         shap_values = explainer.shap_values(X)
     else:
         # Linear or unknown: use LinearExplainer or KernelExplainer
-        background = shap.sample(X, min(background_samples, len(X)),
-                                 random_state=random_seed)
+        np.random.seed(random_seed)
+        background = shap.sample(X, min(background_samples, len(X)))
         try:
             explainer = shap.LinearExplainer(model, background)
             shap_values = explainer.shap_values(X)
@@ -101,7 +101,8 @@ def compute_ensemble_shap(models_path, X, feature_names=None, random_seed=42):
                 explainer = shap.TreeExplainer(model)
                 sv = explainer.shap_values(X)
             else:
-                background = shap.sample(X, min(100, len(X)), random_state=random_seed)
+                np.random.seed(random_seed)
+                background = shap.sample(X, min(100, len(X)))
                 explainer = shap.LinearExplainer(model, background)
                 sv = explainer.shap_values(X)
             shap_dict[name] = sv
